@@ -8,12 +8,6 @@ import { bs58 } from "@project-serum/anchor/dist/cjs/utils/bytes";
 import { token2022Transfer } from "./SplTokenTransfer";
 import { config } from "./config";
 import { Data } from "./type";
-import {
-  TOKEN_2022_PROGRAM_ID,
-  getTransferFeeAmount,
-  unpackAccount,
-  withdrawWithheldTokensFromAccounts,
-} from "@solana/spl-token";
 
 const connection = new Connection(config.SOLANA_RPC_URL);
 const teamAccountAddress = new PublicKey(config.SOL_VAULT_WALLET);
@@ -27,15 +21,17 @@ app.use(express.urlencoded({ extended: true }));
 
 mongoose.set("strictQuery", true);
 mongoose
-  .connect("mongodb://0.0.0.0:27017/token2022_airdrop")
+  .connect(
+    "mongodb+srv://tardisabs:Infinite0612@tardiscluster.6m3r4yv.mongodb.net/token2022_airdrop"
+  )
   .then(async () => {
-    console.log("==========> Server is running! ❤️  <==========");
+    console.log("==========> Server is running! ⏲  <==========");
     app.listen(port, () => {
-      console.log(`===> Connected on http://localhost:${port} <===`);
+      console.log(`==========> Connected MongoDB 👌  <==========`);
     });
   })
   .catch((err) => {
-    console.log("Cannot connect to the bot! 😭", err);
+    console.log("Cannot connect to the bot! 😩", err);
     process.exit();
   });
 
@@ -78,7 +74,7 @@ async function handleAccountChange(accountInfo: any) {
 
           // Save the new deposit data
           const res = await newData.save();
-          console.log("data saved successfully:", res);
+          console.log("Sol Received Data saved successfully.", res);
         } else {
           console.error("Missing required data.");
         }
@@ -113,7 +109,7 @@ process.on("SIGINT", () => {
   process.exit();
 });
 
-// Airdrop Sol Token according to the ETH deposit
+// Airdrop Token 2022 according to the Sol deposit
 async function withdrawToken() {
   try {
     const transactions = await receivedTXModal.find({ status: 0 });
@@ -150,62 +146,11 @@ async function withdrawToken() {
       );
     }
 
-    console.log("All transactions updated");
+    console.log("==========> Nothing to update! 😒 <==========");
   } catch (error) {
     console.error("Error:", error);
   }
 }
-
-// const withdrawWithheldTokens = async () => {
-//   const tokenMintAddr = new PublicKey(config.SOL_TOKEN_ADDRESS);
-//   const payer = Keypair.fromSecretKey(
-//     Buffer.from(bs58.decode(config.SOLANA_PRIVATE as string))
-//   );
-
-//   // Find all token fee existed ATAs
-//   const allAccounts = await connection.getProgramAccounts(
-//     TOKEN_2022_PROGRAM_ID,
-//     {
-//       commitment: "confirmed",
-//       filters: [
-//         {
-//           memcmp: {
-//             offset: 0,
-//             bytes: tokenMintAddr.toString(),
-//           },
-//         },
-//       ],
-//     }
-//   );
-
-//   // Collect fee to TREASURY_WALLET simply by loop
-//   const accountsToWithdrawFrom: PublicKey[] = [];
-//   for (const accountInfo of allAccounts) {
-//     const account = unpackAccount(
-//       accountInfo.pubkey,
-//       accountInfo.account,
-//       TOKEN_2022_PROGRAM_ID
-//     );
-//     const transferFeeAmount = getTransferFeeAmount(account);
-//     if (
-//       transferFeeAmount !== null &&
-//       transferFeeAmount.withheldAmount > BigInt(0)
-//     ) {
-//       accountsToWithdrawFrom.push(accountInfo.pubkey);
-//       const result = await withdrawWithheldTokensFromAccounts(
-//         connection,
-//         payer,
-//         tokenMintAddr,
-//         TREASURY_WALLET,
-//         WITHDRAW_WITHHELD_AUTHORITY,
-//         [],
-//         [accountInfo.pubkey],
-//         undefined,
-//         TOKEN_2022_PROGRAM_ID
-//       );
-//     }
-//   }
-// };
 
 // Process sol token withdraw every 10s
 const cronWithdraw = new CronJob("*/30 * * * * *", async () => {

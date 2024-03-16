@@ -268,16 +268,11 @@ export const token2022Transfer = async (
   fullData: Data[],
   wallet: Keypair
 ) => {
-  console.log("enter token2022 function!!!");
-  console.log("tokenMint ===>", tokenMint);
-  console.log("sender ===>", sender);
   const [address] = PublicKey.findProgramAddressSync(
     [sender.toBuffer(), TOKEN_2022_PROGRAM_ID.toBuffer(), tokenMint.toBuffer()],
     ASSOCIATED_TOKEN_PROGRAM_ID
   );
-  console.log("send token account address ===>", address);
-  let sendTokenAccount: PublicKey = address;
-  console.log("before receive token account");
+  const sendTokenAccount: PublicKey = address;
 
   await Promise.all(
     fullData.map(async (txs, index) => {
@@ -291,31 +286,40 @@ export const token2022Transfer = async (
         undefined,
         TOKEN_2022_PROGRAM_ID
       );
-      console.log(
-        "receiver token account address ===>",
-        receiveTokenAccount.address
-      );
 
-      const signature = await transferChecked(
-        connection,
-        wallet,
-        sendTokenAccount,
-        tokenMint,
-        receiveTokenAccount.address,
-        sender,
-        txs.amount,
-        tokenDecimal,
-        [wallet],
-        { commitment: "confirmed" },
-        TOKEN_2022_PROGRAM_ID
-      );
-      await receivedTXModal.updateOne(
-        { signature: txs.signature },
-        { status: 1, signature: signature }
-      );
+      console.log("=>Got the receiveTokenAccount");
 
-      console.log("Confirmed ==>", signature);
-      return signature;
+      try {
+        const signature = await transferChecked(
+          connection,
+          wallet,
+          sendTokenAccount,
+          tokenMint,
+          receiveTokenAccount.address,
+          sender,
+          txs.amount,
+          tokenDecimal,
+          [wallet],
+          { commitment: "confirmed" },
+          TOKEN_2022_PROGRAM_ID
+        );
+        console.log(
+          "===================================================================================================="
+        );
+        console.log("Confirmed :", signature);
+        console.log(
+          "===================================================================================================="
+        );
+        await receivedTXModal.updateOne(
+          { signature: txs.signature },
+          { status: 1, signature: signature }
+        );
+        console.log("==>Saved Sol Sent Data saved successfully.");
+
+        return signature;
+      } catch (error) {
+        console.log("error", error);
+      }
     })
   );
 };
